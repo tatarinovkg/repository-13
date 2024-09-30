@@ -1,0 +1,387 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lessons</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f0f0f5;
+            margin: 0;
+            padding: 20px;
+        }
+        .lesson-container {
+            max-width: 600px;
+            margin: auto;
+        }
+        .lesson {
+            background-color: #ffffff;
+            border-radius: 12px;
+            padding: 20px;
+            margin: 10px 0;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            position: relative;
+        }
+        .lesson-number {
+            font-size: 24px;
+            font-weight: bold;
+            display: inline-block;
+            width: 40px;
+            height: 40px;
+            text-align: center;
+            background-color: #007bff;
+            color: white;
+            border-radius: 12px;
+            line-height: 40px;
+            position: absolute;
+            top: 20px;
+            left: 20px;
+        }
+        .delete-button, .move-button {
+            background-color: #007bff;
+            border: none;
+            border-radius: 12px;
+            width: 40px;
+            height: 40px;
+            cursor: pointer;
+            position: absolute;
+            top: 20px;
+            transition: background-color 0.3s ease;
+            color: white;
+            font-size: 18px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .delete-button {
+            background-color: #ff4d4d;
+            right: 10px;
+        }
+        .move-up-button {
+            right: 110px;
+        }
+        .move-down-button {
+            right: 60px;
+        }
+        .move-button:hover {
+            background-color: #0056b3;
+        }
+        .lesson-name, textarea.homework-text {
+            font-size: 18px;
+            border: 1px solid #0071ff;
+            border-radius: 12px;
+            padding: 10px;
+            transition: all 0.3s ease;
+            width: calc(100% - 20px);
+            margin-right: 10px;
+        }
+        .lesson-name:focus, textarea.homework-text:focus {
+            outline: none; /* Убираем стандартное выделение */
+            border-color: #3487f1; /* Более яркий синий цвет при фокусе */
+        }
+        .lesson-name {
+            margin-top: 60px;
+        }
+        textarea.homework-text {
+            min-height: 60px;
+            margin-top: 10px;
+            resize: vertical;
+        }
+        .add-lesson-button {
+            background-color: #007bff;
+            border: none;
+            border-radius: 12px;
+            padding: 10px;
+            color: white;
+            text-align: center;
+            width: 100%;
+            cursor: pointer;
+            margin-top: 10px;
+            transition: background-color 0.3s ease;
+        }
+        .add-lesson-button:hover {
+            background-color: #0056b3;
+        }
+        .header {
+            font-size: 20px;
+            font-weight: bold;
+            margin: 10px 0;
+            text-align: center;
+        }
+        .header-time, .header-date {
+            text-align: left;
+            margin-bottom: 5px;
+            color: #282828;
+            font-weight: bold;
+        }
+        .no-class, .error-message {
+            font-size: 16px;
+            color: #666;
+            text-align: center;
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<script>
+    let tg = window.Telegram.WebApp;
+
+    tg.expand();
+    tg.MainButton.setText("Сохранить и закрыть");
+    tg.MainButton.show();
+
+    let userId = 1413669756;
+
+    document.addEventListener("DOMContentLoaded", function() {
+        const lessonsContainer = document.createElement("div");
+        lessonsContainer.id = "lessons";
+        lessonsContainer.classList.add("lesson-container");
+        document.body.appendChild(lessonsContainer);
+
+        const headerHomework = document.createElement("div");
+        headerHomework.classList.add("header");
+        headerHomework.innerText = "Домашнее задание";
+        document.body.insertBefore(headerHomework, lessonsContainer);
+
+        fetch("https://louse-precious-sincerely.ngrok-free.app/api/check_user", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ userId: userId })
+        })
+            .then(response => response.json())
+            .then(data => {
+                if (!data.registered) {
+                    const noClassMessage = document.createElement("div");
+                    noClassMessage.classList.add("no-class");
+                    noClassMessage.innerText = "Вы не состоите ни в каком классе.";
+                    lessonsContainer.appendChild(noClassMessage);
+                } else {
+                    let hasNextDayLessons = false;
+                    let hasOtherDayLessons = false;
+
+                    data.lessons.forEach(lesson => {
+                        if (lesson.isNextDay === 1) hasNextDayLessons = true;
+                        else hasOtherDayLessons = true;
+                    });
+
+                    if (hasNextDayLessons) {
+                        addHeader("Уроки на следующий учебный день", data.hwDate, data.lessonTime, lessonsContainer, true);
+
+                        data.lessons.forEach(lesson => {
+                            if (lesson.isNextDay === 1) addLesson(lesson, lessonsContainer, true);
+                        });
+                    } else {
+                        addHeader("Уроки на следующий учебный день", data.hwDate, data.lessonTime, lessonsContainer, true);
+                    }
+
+                    if (hasOtherDayLessons) {
+                        addHeader("Уроки на другие дни", "", "", lessonsContainer, false);
+
+                        data.lessons.forEach(lesson => {
+                            if (lesson.isNextDay === 0) addLesson(lesson, lessonsContainer, false);
+                        });
+                    } else {
+                        addHeader("Уроки на другие дни", "", "", lessonsContainer, false);
+                    }
+                }
+            })
+            .catch(error => {
+                const errorMessage = document.createElement("div");
+                errorMessage.classList.add("error-message");
+                errorMessage.innerText = "Произошла ошибка при получении данных.";
+                lessonsContainer.appendChild(errorMessage);
+            });
+
+        function addHeader(headerText, hwDate = "", lessonTime = "", container, isNextDay) {
+            const groupWrapper = document.createElement("div");
+            groupWrapper.classList.add("group-wrapper");
+            groupWrapper.setAttribute("data-is-next-day", isNextDay);
+
+            const header = document.createElement("div");
+            header.classList.add("header");
+            header.innerText = headerText;
+            groupWrapper.appendChild(header);
+
+            if (hwDate) {
+                const headerDate = document.createElement("div");
+                headerDate.classList.add("header-date");
+                headerDate.innerText = `Уроки на ${hwDate}`;
+                groupWrapper.appendChild(headerDate);
+            }
+
+            if (lessonTime) {
+                const headerTime = document.createElement("div");
+                headerTime.innerText = lessonTime === "Не известно"
+                    ? "Начало первого урока не известно!"
+                    : `Первый урок начинается в ${lessonTime}`;
+                headerTime.classList.add("header-time");
+                groupWrapper.appendChild(headerTime);
+            }
+
+            container.appendChild(groupWrapper);
+            addAddLessonButton(groupWrapper);
+        }
+
+        function addLesson(lesson, container, isNextDay) {
+            const groupWrapper = container.querySelector(`.group-wrapper[data-is-next-day='${isNextDay}']`);
+
+            if (!groupWrapper) {
+                console.error("Группа не найдена для урока:", lesson);
+                return;
+            }
+
+            const lessonElement = document.createElement("div");
+            lessonElement.classList.add("lesson");
+
+            const lessonNumber = document.createElement("div");
+            lessonNumber.classList.add("lesson-number");
+            lessonNumber.innerText = lesson.lessonNumber;
+
+            const lessonName = document.createElement("input");
+            lessonName.classList.add("lesson-name");
+            lessonName.placeholder = "Название урока";
+            lessonName.value = lesson.lessonName;
+
+            const homeworkText = document.createElement("textarea");
+            homeworkText.classList.add("homework-text");
+            homeworkText.value = lesson.homeworkText;
+
+            const deleteButton = document.createElement("button");
+            deleteButton.classList.add("delete-button");
+            deleteButton.innerText = "✖";
+            deleteButton.addEventListener("click", () => {
+                groupWrapper.removeChild(lessonElement);
+                updateLessonNumbers(groupWrapper);
+            });
+
+            const moveDownButton = document.createElement("button");
+            moveDownButton.classList.add("move-button", "move-down-button");
+            moveDownButton.innerText = "↓";
+            moveDownButton.addEventListener("click", () => moveLessonDown(lessonElement, groupWrapper));
+
+            const moveUpButton = document.createElement("button");
+            moveUpButton.classList.add("move-button", "move-up-button");
+            moveUpButton.innerText = "↑";
+            moveUpButton.addEventListener("click", () => moveLessonUp(lessonElement, groupWrapper));
+
+            lessonElement.appendChild(lessonNumber);
+            lessonElement.appendChild(lessonName);
+            lessonElement.appendChild(homeworkText);
+            lessonElement.appendChild(deleteButton);
+            lessonElement.appendChild(moveUpButton);  // Верхняя кнопка перемещения
+            lessonElement.appendChild(moveDownButton);  // Нижняя кнопка перемещения
+
+            groupWrapper.appendChild(lessonElement);
+        }
+
+        function addAddLessonButton(groupWrapper) {
+            const addLessonButton = document.createElement("button");
+            addLessonButton.classList.add("add-lesson-button");
+            addLessonButton.innerText = "Добавить урок";
+            groupWrapper.appendChild(addLessonButton);
+
+            addLessonButton.addEventListener("click", () => {
+                const newLesson = {
+                    lessonNumber: groupWrapper.querySelectorAll(".lesson").length + 1,
+                    lessonName: "",
+                    homeworkText: ""
+                };
+                addLesson(newLesson, document.body, groupWrapper.getAttribute("data-is-next-day") === "true");
+            });
+        }
+
+        function moveLessonUp(lessonElement, groupWrapper) {
+            const previousLesson = lessonElement.previousElementSibling;
+            if (previousLesson && previousLesson.classList.contains("lesson")) {
+                groupWrapper.insertBefore(lessonElement, previousLesson);
+                updateLessonNumbers(groupWrapper);
+            }
+        }
+
+        function moveLessonDown(lessonElement, groupWrapper) {
+            const nextLesson = lessonElement.nextElementSibling;
+            if (nextLesson && nextLesson.classList.contains("lesson")) {
+                groupWrapper.insertBefore(nextLesson, lessonElement);
+                updateLessonNumbers(groupWrapper);
+            }
+        }
+
+        function updateLessonNumbers(groupWrapper) {
+            const lessons = groupWrapper.querySelectorAll(".lesson");
+            lessons.forEach((lessonElement, index) => {
+                lessonElement.querySelector(".lesson-number").innerText = index + 1;
+            });
+        }
+
+        tg.MainButton.onClick(function() {
+            const lessonsContainer = document.querySelector("#lessons");
+            const lessonElements = lessonsContainer.querySelectorAll(".lesson");
+
+            let lessons = [];
+            let hasErrors = false;
+
+            lessonElements.forEach(lessonElement => {
+                const lessonName = lessonElement.querySelector(".lesson-name");
+                const homeworkText = lessonElement.querySelector(".homework-text");
+
+                // Проверяем, заполнены ли поля
+                if (!lessonName.value.trim() || !homeworkText.value.trim()) {
+                    lessonName.classList.add("error");
+                    homeworkText.classList.add("error");
+                    hasErrors = true;
+                } else {
+                    lessonName.classList.remove("error");
+                    homeworkText.classList.remove("error");
+
+                    const lesson = {
+                        lessonNumber: lessonElement.querySelector(".lesson-number").innerText,
+                        lessonName: lessonName.value,
+                        lessonHomework: homeworkText.value,
+                        isNextDay: lessonElement.closest('.group-wrapper').getAttribute('data-is-next-day') === 'true' ? 1 : 0
+                    };
+
+                    lessons.push(lesson);
+                }
+            });
+
+            if (hasErrors) {
+                showPopup("Заполните все поля перед отправкой.");
+                return;
+            }
+
+            const data = {
+                userId: userId,
+                lessons: lessons
+            };
+
+            fetch("https://louse-precious-sincerely.ngrok-free.app/api/get/lessons", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(data)
+            })
+                .then(response => response.json())
+                .then(() => {
+                    tg.close();  // Закрыть приложение после успешной отправки
+                })
+                .catch(() => {
+                    showPopup("Произошла ошибка при отправке данных.");
+                });
+        });
+
+        // Всплывающее окно
+        function showPopup(message) {
+            const popupOverlay = document.getElementById("popup-overlay");
+            const popupMessage = document.getElementById("popup-message");
+            popupMessage.innerText = message;
+            popupOverlay.style.display = "flex";
+        }
+
+        document.getElementById("close-popup").addEventListener("click", function() {
+            document.getElementById("popup-overlay").style.display = "none";
+        });
+    });
+</script>
+</body>
+</html>
