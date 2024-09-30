@@ -121,6 +121,16 @@
             text-align: center;
             margin-top: 20px;
         }
+        .error {
+            border-color: #ff4d4d; /* Красная обводка */
+            box-shadow: 0 0 5px rgba(255, 77, 77, 0.6); /* Красный эффект тени */
+            transition: all 0.3s ease; /* Плавный переход */
+        }
+        .lesson-name.error, .homework-text.error {
+            border-width: 1px; /* Толщина обводки такая же, как и обычная */
+            border-style: solid;
+            outline: none; /* Убираем стандартное выделение */
+        }         
     </style>
 </head>
 <body>
@@ -318,14 +328,14 @@
         tg.MainButton.onClick(function() {
             const lessonsContainer = document.querySelector("#lessons");
             const lessonElements = lessonsContainer.querySelectorAll(".lesson");
-
+        
             let lessons = [];
             let hasErrors = false;
-
+        
             lessonElements.forEach(lessonElement => {
                 const lessonName = lessonElement.querySelector(".lesson-name");
                 const homeworkText = lessonElement.querySelector(".homework-text");
-
+        
                 // Проверяем, заполнены ли поля
                 if (!lessonName.value.trim() || !homeworkText.value.trim()) {
                     lessonName.classList.add("error");
@@ -334,28 +344,28 @@
                 } else {
                     lessonName.classList.remove("error");
                     homeworkText.classList.remove("error");
-
+        
                     const lesson = {
                         lessonNumber: lessonElement.querySelector(".lesson-number").innerText,
                         lessonName: lessonName.value,
                         lessonHomework: homeworkText.value,
                         isNextDay: lessonElement.closest('.group-wrapper').getAttribute('data-is-next-day') === 'true' ? 1 : 0
                     };
-
+        
                     lessons.push(lesson);
                 }
             });
-
+        
             if (hasErrors) {
                 showPopup("Заполните все поля перед отправкой.");
                 return;
             }
-
+        
             const data = {
                 userId: userId,
                 lessons: lessons
             };
-
+        
             fetch("https://louse-precious-sincerely.ngrok-free.app/api/get/lessons", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
@@ -369,6 +379,7 @@
                     showPopup("Произошла ошибка при отправке данных.");
                 });
         });
+
 
         // Всплывающее окно
         function showPopup(message) {
