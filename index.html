@@ -334,24 +334,30 @@
         
             lessonElements.forEach(lessonElement => {
                 const lessonName = lessonElement.querySelector(".lesson-name");
-                const homeworkText = lessonElement.querySelector(".homework-text");
+                const homeworkText = lessonElement.querySelector(".homework-text");  // исправлено
         
                 // Проверяем, заполнены ли поля
-                if (!lessonName.value.trim() || !homeworkText.value.trim()) {
+                if (!lessonName.value.trim()) {
                     lessonName.classList.add("error");
-                    homeworkText.classList.add("error");
                     hasErrors = true;
                 } else {
                     lessonName.classList.remove("error");
-                    homeworkText.classList.remove("error");
+                }
         
+                if (!homeworkText.value.trim()) {
+                    homeworkText.classList.add("error");  // добавлен класс .error для домашнего задания
+                    hasErrors = true;
+                } else {
+                    homeworkText.classList.remove("error");
+                }
+        
+                if (!hasErrors) {
                     const lesson = {
                         lessonNumber: lessonElement.querySelector(".lesson-number").innerText,
                         lessonName: lessonName.value,
                         lessonHomework: homeworkText.value,
                         isNextDay: lessonElement.closest('.group-wrapper').getAttribute('data-is-next-day') === 'true' ? 1 : 0
                     };
-        
                     lessons.push(lesson);
                 }
             });
@@ -379,6 +385,7 @@
                     showPopup("Произошла ошибка при отправке данных.");
                 });
         });
+
 
 
         // Всплывающее окно
