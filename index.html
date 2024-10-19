@@ -197,8 +197,8 @@
 <script>
     let tg = window.Telegram.WebApp;
 
-    tg.expand();
-    tg.MainButton.setText("Сохранить и закрыть");
+    tg.MainButton.setText("Закрыть приложение");
+    tg.MainButton.onClick(() => tg.close());
     tg.MainButton.show();
 
     let userId = tg.initDataUnsafe.user.id;
@@ -237,7 +237,7 @@
                 lessonsContainer.appendChild(noClassMessage);
         
                 // Меняем текст кнопки на "Закрыть"
-                tg.MainButton.setText("Закрыть");
+                tg.MainButton.setText("Закрыть приложение");
                 tg.MainButton.onClick(() => tg.close());
                 tg.MainButton.show();
         
@@ -267,14 +267,72 @@
                 } else {
                     addHeader("Уроки на другие дни", "", "", lessonsContainer, false);
                 }
-        
-                // Оставляем стандартное поведение кнопки
                 tg.MainButton.setText("Сохранить и закрыть");
                 tg.MainButton.onClick(() => {
-                    // Здесь можно добавить логику сохранения данных
-                    tg.close();
+                    const lessonsContainer = document.querySelector("#lessons");
+                    const lessonElements = lessonsContainer.querySelectorAll(".lesson");
+                
+                    let lessons = [];
+                    let hasErrors = false;
+                
+                    lessonElements.forEach(lessonElement => {
+                        const lessonName = lessonElement.querySelector(".lesson-name");
+                        const homeworkText = lessonElement.querySelector(".homework-text");
+                
+                        // Проверяем, заполнено ли поле названия урока
+                        if (!lessonName.value.trim()) {
+                            lessonName.style.borderColor = "red";  // Подсвечиваем поле красным, если оно пустое
+                            lessonName.style.borderWidth = "2px";  // Делаем обводку толще для выделения
+                            hasErrors = true;
+                        } else {
+                            lessonName.style.borderColor = "#0071ff";  // Возвращаем исходный цвет обводки
+                            lessonName.style.borderWidth = "1px";     // Возвращаем исходную толщину
+                        }
+                
+                        // Проверяем, заполнено ли поле домашнего задания
+                        if (!homeworkText.value.trim()) {
+                            homeworkText.style.borderColor = "red";  // Подсвечиваем поле красным, если оно пустое
+                            homeworkText.style.borderWidth = "2px";  // Делаем обводку толще для выделения
+                            hasErrors = true;
+                        } else {
+                            homeworkText.style.borderColor = "#0071ff";  // Возвращаем исходный цвет обводки
+                            homeworkText.style.borderWidth = "1px";     // Возвращаем исходную толщину
+                        }
+                
+                        if (!hasErrors) {
+                            const lesson = {
+                                lessonNumber: lessonElement.querySelector(".lesson-number").innerText,
+                                lessonName: lessonName.value,
+                                lessonHomework: homeworkText.value,
+                                isNextDay: lessonElement.closest('.group-wrapper').getAttribute('data-is-next-day') === 'true' ? 1 : 0
+                            };
+                            lessons.push(lesson);
+                        }
+                    });
+                
+                    if (hasErrors) {
+                        displayPopup("Заполните все поля перед отправкой.");
+                        return;
+                    }
+                
+                    const data = {
+                        userId: userId,
+                        lessons: lessons
+                    };
+                
+                    fetch("https://louse-precious-sincerely.ngrok-free.app/api/get/lessons", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify(data)
+                    })
+                    .then(response => response.json())
+                    .then(() => {
+                        tg.close();  // Закрыть приложение после успешной отправки
+                    })
+                    .catch(() => {
+                        displayPopup("Произошла ошибка при отправке данных.");
+                    });
                 });
-                tg.MainButton.show();
             }
         })
         .catch(error => {
@@ -284,7 +342,7 @@
             document.querySelector("#lessons").appendChild(errorMessage);
         
             // Меняем текст кнопки на "Закрыть" при ошибке
-            tg.MainButton.setText("Закрыть");
+            tg.MainButton.setText("Закрыть приложение");
             tg.MainButton.onClick(() => tg.close());
             tg.MainButton.show();
         });
@@ -409,72 +467,6 @@
                 lessonElement.querySelector(".lesson-number").innerText = index + 1;
             });
         }
-
-        tg.MainButton.onClick(function() {
-            const lessonsContainer = document.querySelector("#lessons");
-            const lessonElements = lessonsContainer.querySelectorAll(".lesson");
-        
-            let lessons = [];
-            let hasErrors = false;
-        
-            lessonElements.forEach(lessonElement => {
-                const lessonName = lessonElement.querySelector(".lesson-name");
-                const homeworkText = lessonElement.querySelector(".homework-text");
-        
-                // Проверяем, заполнено ли поле названия урока
-                if (!lessonName.value.trim()) {
-                    lessonName.style.borderColor = "red";  // Подсвечиваем поле красным, если оно пустое
-                    lessonName.style.borderWidth = "2px";  // Делаем обводку толще для выделения
-                    hasErrors = true;
-                } else {
-                    lessonName.style.borderColor = "#0071ff";  // Возвращаем исходный цвет обводки
-                    lessonName.style.borderWidth = "1px";     // Возвращаем исходную толщину
-                }
-        
-                // Проверяем, заполнено ли поле домашнего задания
-                if (!homeworkText.value.trim()) {
-                    homeworkText.style.borderColor = "red";  // Подсвечиваем поле красным, если оно пустое
-                    homeworkText.style.borderWidth = "2px";  // Делаем обводку толще для выделения
-                    hasErrors = true;
-                } else {
-                    homeworkText.style.borderColor = "#0071ff";  // Возвращаем исходный цвет обводки
-                    homeworkText.style.borderWidth = "1px";     // Возвращаем исходную толщину
-                }
-        
-                if (!hasErrors) {
-                    const lesson = {
-                        lessonNumber: lessonElement.querySelector(".lesson-number").innerText,
-                        lessonName: lessonName.value,
-                        lessonHomework: homeworkText.value,
-                        isNextDay: lessonElement.closest('.group-wrapper').getAttribute('data-is-next-day') === 'true' ? 1 : 0
-                    };
-                    lessons.push(lesson);
-                }
-            });
-        
-            if (hasErrors) {
-                displayPopup("Заполните все поля перед отправкой.");
-                return;
-            }
-        
-            const data = {
-                userId: userId,
-                lessons: lessons
-            };
-        
-            fetch("https://louse-precious-sincerely.ngrok-free.app/api/get/lessons", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(data)
-            })
-                .then(response => response.json())
-                .then(() => {
-                    tg.close();  // Закрыть приложение после успешной отправки
-                })
-                .catch(() => {
-                    displayPopup("Произошла ошибка при отправке данных.");
-                });
-        });
 
         function displayPopup(message, shouldReload = false) {
             const popupOverlay = document.getElementById('popupOverlay');
