@@ -130,7 +130,7 @@
             border-width: 1px; /* Толщина обводки такая же, как и обычная */
             border-style: solid;
             outline: none; /* Убираем стандартное выделение */
-        }         
+        }
         .popup-overlay {
             position: fixed;
             top: 0;
@@ -200,9 +200,9 @@
     tg.MainButton.setText("Закрыть приложение");
     tg.MainButton.onClick(() => tg.close());
     tg.MainButton.show();
-    
+
     tg.expand()
-    
+
     let userId = tg.initDataUnsafe.user.id;
 
     document.addEventListener("DOMContentLoaded", function() {
@@ -221,133 +221,67 @@
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ userId: userId })
         })
-        .then(response => response.json())
-        .then(data => {
-            const lessonsContainer = document.querySelector("#lessons");
-        
-            if (!data.registered) {
-                const noClassMessage = document.createElement("div");
-                noClassMessage.classList.add("no-class");
-        
-                // Проверяем, есть ли поле message, чтобы вывести конкретное сообщение
-                if (data.message) {
-                    noClassMessage.innerText = data.message;
+            .then(response => response.json())
+            .then(data => {
+                const lessonsContainer = document.querySelector("#lessons");
+
+                if (!data.registered) {
+                    const noClassMessage = document.createElement("div");
+                    noClassMessage.classList.add("no-class");
+
+                    // Проверяем, есть ли поле message, чтобы вывести конкретное сообщение
+                    if (data.message) {
+                        noClassMessage.innerText = data.message;
+                    } else {
+                        noClassMessage.innerText = "Вы не состоите ни в каком классе.";
+                    }
+
+                    lessonsContainer.appendChild(noClassMessage);
+
+                    // Меняем текст кнопки на "Закрыть"
+                    tg.MainButton.setText("Закрыть приложение");
+                    tg.MainButton.onClick(() => tg.close());
+                    tg.MainButton.show();
+
                 } else {
-                    noClassMessage.innerText = "Вы не состоите ни в каком классе.";
+                    let hasNextDayLessons = false;
+                    let hasOtherDayLessons = false;
+
+                    data.lessons.forEach(lesson => {
+                        if (lesson.isNextDay === 1) hasNextDayLessons = true;
+                        else hasOtherDayLessons = true;
+                    });
+
+                    if (hasNextDayLessons) {
+                        addHeader("Уроки на следующий учебный день", data.hwDate, data.lessonTime, lessonsContainer, true);
+                        data.lessons.forEach(lesson => {
+                            if (lesson.isNextDay === 1) addLesson(lesson, lessonsContainer, true);
+                        });
+                    } else {
+                        addHeader("Уроки на следующий учебный день", data.hwDate, data.lessonTime, lessonsContainer, true);
+                    }
+
+                    if (hasOtherDayLessons) {
+                        addHeader("Уроки на другие дни", "", "", lessonsContainer, false);
+                        data.lessons.forEach(lesson => {
+                            if (lesson.isNextDay === 0) addLesson(lesson, lessonsContainer, false);
+                        });
+                    } else {
+                        addHeader("Уроки на другие дни", "", "", lessonsContainer, false);
+                    }
                 }
-        
-                lessonsContainer.appendChild(noClassMessage);
-        
-                // Меняем текст кнопки на "Закрыть"
+            })
+            .catch(error => {
+                const errorMessage = document.createElement("div");
+                errorMessage.classList.add("error-message");
+                errorMessage.innerText = "Произошла ошибка при получении данных.";
+                document.querySelector("#lessons").appendChild(errorMessage);
+
+                // Меняем текст кнопки на "Закрыть" при ошибке
                 tg.MainButton.setText("Закрыть приложение");
                 tg.MainButton.onClick(() => tg.close());
                 tg.MainButton.show();
-        
-            } else {
-                let hasNextDayLessons = false;
-                let hasOtherDayLessons = false;
-        
-                data.lessons.forEach(lesson => {
-                    if (lesson.isNextDay === 1) hasNextDayLessons = true;
-                    else hasOtherDayLessons = true;
-                });
-        
-                if (hasNextDayLessons) {
-                    addHeader("Уроки на следующий учебный день", data.hwDate, data.lessonTime, lessonsContainer, true);
-                    data.lessons.forEach(lesson => {
-                        if (lesson.isNextDay === 1) addLesson(lesson, lessonsContainer, true);
-                    });
-                } else {
-                    addHeader("Уроки на следующий учебный день", data.hwDate, data.lessonTime, lessonsContainer, true);
-                }
-        
-                if (hasOtherDayLessons) {
-                    addHeader("Уроки на другие дни", "", "", lessonsContainer, false);
-                    data.lessons.forEach(lesson => {
-                        if (lesson.isNextDay === 0) addLesson(lesson, lessonsContainer, false);
-                    });
-                } else {
-                    addHeader("Уроки на другие дни", "", "", lessonsContainer, false);
-                }
-                tg.MainButton.setText("Сохранить и закрыть");
-                tg.MainButton.onClick(() => {
-                    const lessonsContainer = document.querySelector("#lessons");
-                    const lessonElements = lessonsContainer.querySelectorAll(".lesson");
-                
-                    let lessons = [];
-                    let hasErrors = false;
-                
-                    lessonElements.forEach(lessonElement => {
-                        const lessonName = lessonElement.querySelector(".lesson-name");
-                        const homeworkText = lessonElement.querySelector(".homework-text");
-                
-                        // Проверяем, заполнено ли поле названия урока
-                        if (!lessonName.value.trim()) {
-                            lessonName.style.borderColor = "red";  // Подсвечиваем поле красным, если оно пустое
-                            lessonName.style.borderWidth = "2px";  // Делаем обводку толще для выделения
-                            hasErrors = true;
-                        } else {
-                            lessonName.style.borderColor = "#0071ff";  // Возвращаем исходный цвет обводки
-                            lessonName.style.borderWidth = "1px";     // Возвращаем исходную толщину
-                        }
-                
-                        // Проверяем, заполнено ли поле домашнего задания
-                        if (!homeworkText.value.trim()) {
-                            homeworkText.style.borderColor = "red";  // Подсвечиваем поле красным, если оно пустое
-                            homeworkText.style.borderWidth = "2px";  // Делаем обводку толще для выделения
-                            hasErrors = true;
-                        } else {
-                            homeworkText.style.borderColor = "#0071ff";  // Возвращаем исходный цвет обводки
-                            homeworkText.style.borderWidth = "1px";     // Возвращаем исходную толщину
-                        }
-                
-                        if (!hasErrors) {
-                            const lesson = {
-                                lessonNumber: lessonElement.querySelector(".lesson-number").innerText,
-                                lessonName: lessonName.value,
-                                lessonHomework: homeworkText.value,
-                                isNextDay: lessonElement.closest('.group-wrapper').getAttribute('data-is-next-day') === 'true' ? 1 : 0
-                            };
-                            lessons.push(lesson);
-                        }
-                    });
-                
-                    if (hasErrors) {
-                        displayPopup("Заполните все поля перед отправкой.");
-                        return;
-                    }
-                
-                    const data = {
-                        userId: userId,
-                        lessons: lessons
-                    };
-                
-                    fetch("https://louse-precious-sincerely.ngrok-free.app/api/get/lessons", {
-                        method: "POST",
-                        headers: { "Content-Type": "application/json" },
-                        body: JSON.stringify(data)
-                    })
-                    .then(response => response.json())
-                    .then(() => {
-                        tg.close();  // Закрыть приложение после успешной отправки
-                    })
-                    .catch(() => {
-                        displayPopup("Произошла ошибка при отправке данных.");
-                    });
-                });
-            }
-        })
-        .catch(error => {
-            const errorMessage = document.createElement("div");
-            errorMessage.classList.add("error-message");
-            errorMessage.innerText = "Произошла ошибка при получении данных.";
-            document.querySelector("#lessons").appendChild(errorMessage);
-        
-            // Меняем текст кнопки на "Закрыть" при ошибке
-            tg.MainButton.setText("Закрыть приложение");
-            tg.MainButton.onClick(() => tg.close());
-            tg.MainButton.show();
-        });
+            });
 
         function addHeader(headerText, hwDate = "", lessonTime = "", container, isNextDay) {
             const groupWrapper = document.createElement("div");
@@ -474,13 +408,13 @@
             const popupOverlay = document.getElementById('popupOverlay');
             const popupContent = document.getElementById('popupContent');
             const closePopupButton = document.getElementById('closePopupButton');
-    
+
             popupContent.innerText = message;
             popupOverlay.style.display = 'flex';
             setTimeout(() => {
                 document.getElementById('popup').classList.add('active');
             }, 10);
-    
+
             if (shouldReload) {
                 closePopupButton.classList.add('close-app-button');
                 closePopupButton.innerText = 'Закрыть приложение';
@@ -488,10 +422,10 @@
                 closePopupButton.classList.remove('close-app-button');
                 closePopupButton.innerText = 'Закрыть';
             }
-    
+
             closePopupButton.removeEventListener('click', handleClosePopupButtonClick);
             closePopupButton.addEventListener('click', handleClosePopupButtonClick);
-    
+
             function handleClosePopupButtonClick() {
                 document.getElementById('popup').classList.remove('active');
                 setTimeout(() => {
@@ -503,6 +437,75 @@
             }
         }
 
+        function mainButtonFunction() {
+            const lessonsContainer = document.querySelector("#lessons");
+            const lessonElements = lessonsContainer.querySelectorAll(".lesson");
+
+            let lessons = [];
+            let hasErrors = false;
+
+            lessonElements.forEach(lessonElement => {
+                const lessonName = lessonElement.querySelector(".lesson-name");
+                const homeworkText = lessonElement.querySelector(".homework-text");
+
+                // Проверяем, заполнено ли поле названия урока
+                if (!lessonName.value.trim()) {
+                    lessonName.style.borderColor = "red";  // Подсвечиваем поле красным, если оно пустое
+                    lessonName.style.borderWidth = "2px";  // Делаем обводку толще для выделения
+                    hasErrors = true;
+                } else {
+                    lessonName.style.borderColor = "#0071ff";  // Возвращаем исходный цвет обводки
+                    lessonName.style.borderWidth = "1px";     // Возвращаем исходную толщину
+                }
+
+                // Проверяем, заполнено ли поле домашнего задания
+                if (!homeworkText.value.trim()) {
+                    homeworkText.style.borderColor = "red";  // Подсвечиваем поле красным, если оно пустое
+                    homeworkText.style.borderWidth = "2px";  // Делаем обводку толще для выделения
+                    hasErrors = true;
+                } else {
+                    homeworkText.style.borderColor = "#0071ff";  // Возвращаем исходный цвет обводки
+                    homeworkText.style.borderWidth = "1px";     // Возвращаем исходную толщину
+                }
+
+                if (!hasErrors) {
+                    const lesson = {
+                        lessonNumber: lessonElement.querySelector(".lesson-number").innerText,
+                        lessonName: lessonName.value,
+                        lessonHomework: homeworkText.value,
+                        isNextDay: lessonElement.closest('.group-wrapper').getAttribute('data-is-next-day') === 'true' ? 1 : 0
+                    };
+                    lessons.push(lesson);
+                }
+            });
+
+            if (hasErrors) {
+                displayPopup("Заполните все поля перед отправкой.");
+                return;
+            }
+
+            const data = {
+                userId: userId,
+                lessons: lessons
+            };
+
+            fetch("https://louse-precious-sincerely.ngrok-free.app/api/get/lessons", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(data)
+            })
+                .then(response => response.json())
+                .then(() => {
+                    tg.close();  // Закрыть приложение после успешной отправки
+                })
+                .catch(() => {
+                    displayPopup("Произошла ошибка при отправке данных.");
+                });
+        }
+
+        tg.MainButton.setText("Сохранить и закрыть");
+        tg.MainButton.onClick(mainButtonFunction);
+        
         document.getElementById("close-popup").addEventListener("click", function() {
             document.getElementById("popup-overlay").style.display = "none";
         });
