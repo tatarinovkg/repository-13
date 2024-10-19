@@ -219,49 +219,57 @@
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ userId: userId })
         })
-            .then(response => response.json())
-            .then(data => {
-                if (!data.registered) {
-                    const noClassMessage = document.createElement("div");
-                    noClassMessage.classList.add("no-class");
-                    noClassMessage.innerText = "Вы не состоите ни в каком классе.";
-                    lessonsContainer.appendChild(noClassMessage);
+        .then(response => response.json())
+        .then(data => {
+            const lessonsContainer = document.querySelector("#lessons");
+        
+            if (!data.registered) {
+                const noClassMessage = document.createElement("div");
+                noClassMessage.classList.add("no-class");
+        
+                // Проверяем, есть ли поле message, чтобы вывести конкретное сообщение
+                if (data.message) {
+                    noClassMessage.innerText = data.message;
                 } else {
-                    let hasNextDayLessons = false;
-                    let hasOtherDayLessons = false;
-
-                    data.lessons.forEach(lesson => {
-                        if (lesson.isNextDay === 1) hasNextDayLessons = true;
-                        else hasOtherDayLessons = true;
-                    });
-
-                    if (hasNextDayLessons) {
-                        addHeader("Уроки на следующий учебный день", data.hwDate, data.lessonTime, lessonsContainer, true);
-
-                        data.lessons.forEach(lesson => {
-                            if (lesson.isNextDay === 1) addLesson(lesson, lessonsContainer, true);
-                        });
-                    } else {
-                        addHeader("Уроки на следующий учебный день", data.hwDate, data.lessonTime, lessonsContainer, true);
-                    }
-
-                    if (hasOtherDayLessons) {
-                        addHeader("Уроки на другие дни", "", "", lessonsContainer, false);
-
-                        data.lessons.forEach(lesson => {
-                            if (lesson.isNextDay === 0) addLesson(lesson, lessonsContainer, false);
-                        });
-                    } else {
-                        addHeader("Уроки на другие дни", "", "", lessonsContainer, false);
-                    }
+                    noClassMessage.innerText = "Вы не состоите ни в каком классе.";
                 }
-            })
-            .catch(error => {
-                const errorMessage = document.createElement("div");
-                errorMessage.classList.add("error-message");
-                errorMessage.innerText = "Произошла ошибка при получении данных.";
-                lessonsContainer.appendChild(errorMessage);
-            });
+        
+                lessonsContainer.appendChild(noClassMessage);
+            } else {
+                let hasNextDayLessons = false;
+                let hasOtherDayLessons = false;
+        
+                data.lessons.forEach(lesson => {
+                    if (lesson.isNextDay === 1) hasNextDayLessons = true;
+                    else hasOtherDayLessons = true;
+                });
+        
+                if (hasNextDayLessons) {
+                    addHeader("Уроки на следующий учебный день", data.hwDate, data.lessonTime, lessonsContainer, true);
+                    data.lessons.forEach(lesson => {
+                        if (lesson.isNextDay === 1) addLesson(lesson, lessonsContainer, true);
+                    });
+                } else {
+                    addHeader("Уроки на следующий учебный день", data.hwDate, data.lessonTime, lessonsContainer, true);
+                }
+        
+                if (hasOtherDayLessons) {
+                    addHeader("Уроки на другие дни", "", "", lessonsContainer, false);
+                    data.lessons.forEach(lesson => {
+                        if (lesson.isNextDay === 0) addLesson(lesson, lessonsContainer, false);
+                    });
+                } else {
+                    addHeader("Уроки на другие дни", "", "", lessonsContainer, false);
+                }
+            }
+        })
+        .catch(error => {
+            const errorMessage = document.createElement("div");
+            errorMessage.classList.add("error-message");
+            errorMessage.innerText = "Произошла ошибка при получении данных.";
+            document.querySelector("#lessons").appendChild(errorMessage);
+        });
+
 
         function addHeader(headerText, hwDate = "", lessonTime = "", container, isNextDay) {
             const groupWrapper = document.createElement("div");
