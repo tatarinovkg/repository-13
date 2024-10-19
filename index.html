@@ -200,7 +200,9 @@
     tg.MainButton.setText("Закрыть приложение");
     tg.MainButton.onClick(() => tg.close());
     tg.MainButton.show();
-
+    
+    tg.expand()
+    
     let userId = tg.initDataUnsafe.user.id;
 
     document.addEventListener("DOMContentLoaded", function() {
