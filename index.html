@@ -235,6 +235,10 @@
                 }
         
                 lessonsContainer.appendChild(noClassMessage);
+
+                tg.MainButton.setText("Закрыть приложение");
+                tg.MainButton.onClick(() => tg.close());
+                tg.MainButton.show();
             } else {
                 let hasNextDayLessons = false;
                 let hasOtherDayLessons = false;
@@ -268,6 +272,9 @@
             errorMessage.classList.add("error-message");
             errorMessage.innerText = "Произошла ошибка при получении данных.";
             document.querySelector("#lessons").appendChild(errorMessage);
+            tg.MainButton.setText("Закрыть приложение");
+            tg.MainButton.onClick(() => tg.close());
+            tg.MainButton.show();
         });
 
 
