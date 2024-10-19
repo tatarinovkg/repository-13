@@ -130,7 +130,7 @@
             border-width: 1px; /* Толщина обводки такая же, как и обычная */
             border-style: solid;
             outline: none; /* Убираем стандартное выделение */
-        }
+        }         
         .popup-overlay {
             position: fixed;
             top: 0;
@@ -197,11 +197,9 @@
 <script>
     let tg = window.Telegram.WebApp;
 
-    tg.MainButton.setText("Закрыть приложение");
-    tg.MainButton.onClick(() => tg.close());
+    tg.expand();
+    tg.MainButton.setText("Сохранить и закрыть");
     tg.MainButton.show();
-
-    tg.expand()
 
     let userId = tg.initDataUnsafe.user.id;
 
@@ -215,6 +213,63 @@
         headerHomework.classList.add("header");
         headerHomework.innerText = "Домашнее задание";
         document.body.insertBefore(headerHomework, lessonsContainer);
+
+        fetch("https://louse-precious-sincerely.ngrok-free.app/api/check_user", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ userId: userId })
+        })
+        .then(response => response.json())
+        .then(data => {
+            const lessonsContainer = document.querySelector("#lessons");
+        
+            if (!data.registered) {
+                const noClassMessage = document.createElement("div");
+                noClassMessage.classList.add("no-class");
+        
+                // Проверяем, есть ли поле message, чтобы вывести конкретное сообщение
+                if (data.message) {
+                    noClassMessage.innerText = data.message;
+                } else {
+                    noClassMessage.innerText = "Вы не состоите ни в каком классе.";
+                }
+        
+                lessonsContainer.appendChild(noClassMessage);
+            } else {
+                let hasNextDayLessons = false;
+                let hasOtherDayLessons = false;
+        
+                data.lessons.forEach(lesson => {
+                    if (lesson.isNextDay === 1) hasNextDayLessons = true;
+                    else hasOtherDayLessons = true;
+                });
+        
+                if (hasNextDayLessons) {
+                    addHeader("Уроки на следующий учебный день", data.hwDate, data.lessonTime, lessonsContainer, true);
+                    data.lessons.forEach(lesson => {
+                        if (lesson.isNextDay === 1) addLesson(lesson, lessonsContainer, true);
+                    });
+                } else {
+                    addHeader("Уроки на следующий учебный день", data.hwDate, data.lessonTime, lessonsContainer, true);
+                }
+        
+                if (hasOtherDayLessons) {
+                    addHeader("Уроки на другие дни", "", "", lessonsContainer, false);
+                    data.lessons.forEach(lesson => {
+                        if (lesson.isNextDay === 0) addLesson(lesson, lessonsContainer, false);
+                    });
+                } else {
+                    addHeader("Уроки на другие дни", "", "", lessonsContainer, false);
+                }
+            }
+        })
+        .catch(error => {
+            const errorMessage = document.createElement("div");
+            errorMessage.classList.add("error-message");
+            errorMessage.innerText = "Произошла ошибка при получении данных.";
+            document.querySelector("#lessons").appendChild(errorMessage);
+        });
+
 
         function addHeader(headerText, hwDate = "", lessonTime = "", container, isNextDay) {
             const groupWrapper = document.createElement("div");
@@ -337,40 +392,7 @@
             });
         }
 
-        function displayPopup(message, shouldReload = false) {
-            const popupOverlay = document.getElementById('popupOverlay');
-            const popupContent = document.getElementById('popupContent');
-            const closePopupButton = document.getElementById('closePopupButton');
-
-            popupContent.innerText = message;
-            popupOverlay.style.display = 'flex';
-            setTimeout(() => {
-                document.getElementById('popup').classList.add('active');
-            }, 10);
-
-            if (shouldReload) {
-                closePopupButton.classList.add('close-app-button');
-                closePopupButton.innerText = 'Закрыть приложение';
-            } else {
-                closePopupButton.classList.remove('close-app-button');
-                closePopupButton.innerText = 'Закрыть';
-            }
-
-            closePopupButton.removeEventListener('click', handleClosePopupButtonClick);
-            closePopupButton.addEventListener('click', handleClosePopupButtonClick);
-
-            function handleClosePopupButtonClick() {
-                document.getElementById('popup').classList.remove('active');
-                setTimeout(() => {
-                    popupOverlay.style.display = 'none';
-                    if (shouldReload) {
-                        tg.close(); // Закрыть приложение
-                    }
-                }, 300);
-            }
-        }
-
-        function mainButtonFunction() {
+        tg.MainButton.onClick(function() {
             const lessonsContainer = document.querySelector("#lessons");
             const lessonElements = lessonsContainer.querySelectorAll(".lesson");
         
@@ -434,81 +456,44 @@
                 .catch(() => {
                     displayPopup("Произошла ошибка при отправке данных.");
                 });
-        }
-
-        document.getElementById("closePopupButton").addEventListener("click", function() {
-            document.getElementById("popupOverlay").style.display = "none";
         });
 
-        fetch("https://louse-precious-sincerely.ngrok-free.app/api/check_user", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ userId: userId })
-        })
-            .then(response => response.json())
-            .then(data => {
-                const lessonsContainer = document.querySelector("#lessons");
-
-                if (!data.registered) {
-                    const noClassMessage = document.createElement("div");
-                    noClassMessage.classList.add("no-class");
-
-                    // Проверяем, есть ли поле message, чтобы вывести конкретное сообщение
-                    if (data.message) {
-                        noClassMessage.innerText = data.message;
-                    } else {
-                        noClassMessage.innerText = "Вы не состоите ни в каком классе.";
+        function displayPopup(message, shouldReload = false) {
+            const popupOverlay = document.getElementById('popupOverlay');
+            const popupContent = document.getElementById('popupContent');
+            const closePopupButton = document.getElementById('closePopupButton');
+    
+            popupContent.innerText = message;
+            popupOverlay.style.display = 'flex';
+            setTimeout(() => {
+                document.getElementById('popup').classList.add('active');
+            }, 10);
+    
+            if (shouldReload) {
+                closePopupButton.classList.add('close-app-button');
+                closePopupButton.innerText = 'Закрыть приложение';
+            } else {
+                closePopupButton.classList.remove('close-app-button');
+                closePopupButton.innerText = 'Закрыть';
+            }
+    
+            closePopupButton.removeEventListener('click', handleClosePopupButtonClick);
+            closePopupButton.addEventListener('click', handleClosePopupButtonClick);
+    
+            function handleClosePopupButtonClick() {
+                document.getElementById('popup').classList.remove('active');
+                setTimeout(() => {
+                    popupOverlay.style.display = 'none';
+                    if (shouldReload) {
+                        tg.close(); // Закрыть приложение
                     }
+                }, 300);
+            }
+        }
 
-                    lessonsContainer.appendChild(noClassMessage);
-
-                    // Меняем текст кнопки на "Закрыть"
-                    tg.MainButton.setText("Закрыть приложение");
-                    tg.MainButton.onClick(() => tg.close());
-                    tg.MainButton.show();
-
-                } else {
-                    let hasNextDayLessons = false;
-                    let hasOtherDayLessons = false;
-
-                    data.lessons.forEach(lesson => {
-                        if (lesson.isNextDay === 1) hasNextDayLessons = true;
-                        else hasOtherDayLessons = true;
-                    });
-
-                    if (hasNextDayLessons) {
-                        addHeader("Уроки на следующий учебный день", data.hwDate, data.lessonTime, lessonsContainer, true);
-                        data.lessons.forEach(lesson => {
-                            if (lesson.isNextDay === 1) addLesson(lesson, lessonsContainer, true);
-                        });
-                    } else {
-                        addHeader("Уроки на следующий учебный день", data.hwDate, data.lessonTime, lessonsContainer, true);
-                    }
-
-                    if (hasOtherDayLessons) {
-                        addHeader("Уроки на другие дни", "", "", lessonsContainer, false);
-                        data.lessons.forEach(lesson => {
-                            if (lesson.isNextDay === 0) addLesson(lesson, lessonsContainer, false);
-                        });
-                    } else {
-                        addHeader("Уроки на другие дни", "", "", lessonsContainer, false);
-                    }
-                    tg.MainButton.setText("Сохранить и закрыть");
-                    tg.MainButton.onClick(mainButtonFuncion);
-                    tg.MainButton.show();
-                }
-            })
-            .catch(error => {
-                const errorMessage = document.createElement("div");
-                errorMessage.classList.add("error-message");
-                errorMessage.innerText = "Произошла ошибка при получении данных.";
-                document.querySelector("#lessons").appendChild(errorMessage);
-
-                // Меняем текст кнопки на "Закрыть" при ошибке
-                tg.MainButton.setText("Закрыть приложение");
-                tg.MainButton.onClick(() => tg.close());
-                tg.MainButton.show();
-            });
+        document.getElementById("close-popup").addEventListener("click", function() {
+            document.getElementById("popup-overlay").style.display = "none";
+        });
     });
 </script>
 </body>
