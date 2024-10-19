@@ -373,14 +373,14 @@
         function mainButtonFunction() {
             const lessonsContainer = document.querySelector("#lessons");
             const lessonElements = lessonsContainer.querySelectorAll(".lesson");
-
+        
             let lessons = [];
             let hasErrors = false;
-
+        
             lessonElements.forEach(lessonElement => {
                 const lessonName = lessonElement.querySelector(".lesson-name");
                 const homeworkText = lessonElement.querySelector(".homework-text");
-
+        
                 // Проверяем, заполнено ли поле названия урока
                 if (!lessonName.value.trim()) {
                     lessonName.style.borderColor = "red";  // Подсвечиваем поле красным, если оно пустое
@@ -390,7 +390,7 @@
                     lessonName.style.borderColor = "#0071ff";  // Возвращаем исходный цвет обводки
                     lessonName.style.borderWidth = "1px";     // Возвращаем исходную толщину
                 }
-
+        
                 // Проверяем, заполнено ли поле домашнего задания
                 if (!homeworkText.value.trim()) {
                     homeworkText.style.borderColor = "red";  // Подсвечиваем поле красным, если оно пустое
@@ -400,7 +400,7 @@
                     homeworkText.style.borderColor = "#0071ff";  // Возвращаем исходный цвет обводки
                     homeworkText.style.borderWidth = "1px";     // Возвращаем исходную толщину
                 }
-
+        
                 if (!hasErrors) {
                     const lesson = {
                         lessonNumber: lessonElement.querySelector(".lesson-number").innerText,
@@ -411,17 +411,17 @@
                     lessons.push(lesson);
                 }
             });
-
+        
             if (hasErrors) {
                 displayPopup("Заполните все поля перед отправкой.");
                 return;
             }
-
+        
             const data = {
                 userId: userId,
                 lessons: lessons
             };
-
+        
             fetch("https://louse-precious-sincerely.ngrok-free.app/api/get/lessons", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
@@ -494,7 +494,8 @@
                         addHeader("Уроки на другие дни", "", "", lessonsContainer, false);
                     }
                     tg.MainButton.setText("Сохранить и закрыть");
-                    tg.MainButton.onClick(mainButtonFunction);
+                    tg.MainButton.onClick(mainButtonFuncion);
+                    tg.MainButton.show();
                 }
             })
             .catch(error => {
