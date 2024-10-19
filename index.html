@@ -235,6 +235,12 @@
                 }
         
                 lessonsContainer.appendChild(noClassMessage);
+        
+                // Меняем текст кнопки на "Закрыть"
+                tg.MainButton.setText("Закрыть");
+                tg.MainButton.onClick(() => tg.close());
+                tg.MainButton.show();
+        
             } else {
                 let hasNextDayLessons = false;
                 let hasOtherDayLessons = false;
@@ -261,6 +267,14 @@
                 } else {
                     addHeader("Уроки на другие дни", "", "", lessonsContainer, false);
                 }
+        
+                // Оставляем стандартное поведение кнопки
+                tg.MainButton.setText("Сохранить и закрыть");
+                tg.MainButton.onClick(() => {
+                    // Здесь можно добавить логику сохранения данных
+                    tg.close();
+                });
+                tg.MainButton.show();
             }
         })
         .catch(error => {
@@ -268,8 +282,12 @@
             errorMessage.classList.add("error-message");
             errorMessage.innerText = "Произошла ошибка при получении данных.";
             document.querySelector("#lessons").appendChild(errorMessage);
+        
+            // Меняем текст кнопки на "Закрыть" при ошибке
+            tg.MainButton.setText("Закрыть");
+            tg.MainButton.onClick(() => tg.close());
+            tg.MainButton.show();
         });
-
 
         function addHeader(headerText, hwDate = "", lessonTime = "", container, isNextDay) {
             const groupWrapper = document.createElement("div");
