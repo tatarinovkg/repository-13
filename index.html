@@ -436,10 +436,10 @@
                 });
         }
 
-        document.getElementById("close-popup").addEventListener("click", function() {
-            document.getElementById("popup-overlay").style.display = "none";
+        document.getElementById("closePopupButton").addEventListener("click", function() {
+            document.getElementById("popupOverlay").style.display = "none";
         });
-        
+
         fetch("https://louse-precious-sincerely.ngrok-free.app/api/check_user", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
